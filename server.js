@@ -112,7 +112,7 @@ app.post("/create-post", authMiddleware, upload.single("image"), async (req, res
     const newPost = new Post({
       caption: req.body.caption,
       // Constructs the image URL based on the current host (ngrok or localhost)
-      image: req.protocol + "://" + req.get("host") + "/uploads/" + req.file.filename,
+      image: "https://" + req.get("host") + "/uploads/" + req.file.filename,
       userId: req.user.userId
     });
 
