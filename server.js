@@ -45,6 +45,8 @@ const PostSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   caption: String,
   image: String,
+
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 }, { timestamps: true });
 const Post = mongoose.model("Post", PostSchema);
 
@@ -119,6 +121,34 @@ app.post("/create-post", authMiddleware, upload.single("image"), async (req, res
   } catch (err) {
     console.error(err);
     res.status(500).send(err.message);
+  }
+});
+app.put("/like", authMiddleware, async (req, res) => {
+  try {
+    const { postId } = req.body;
+    const userId = req.user.userId; // 🔥 VERY IMPORTANT
+
+    const post = await Post.findById(postId);
+
+    if (!post) return res.status(404).send("Post not found");
+
+    if (post.likes.includes(userId)) {
+      // unlike
+      post.likes = post.likes.filter(id => id.toString() !== userId);
+    } else {
+      // like
+      post.likes.push(userId);
+    }
+
+    await post.save();
+
+    const updatedPost = await Post.findById(postId).populate("userId", "name");
+
+    res.json(updatedPost);
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server error");
   }
 });
 
