@@ -29,7 +29,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // DB connect
 dns.setDefaultResultOrder('ipv4first');
-mongoose.connect("mongodb://rishav:4321@ac-qxviyak-shard-00-00.9aimv86.mongodb.net:27017,ac-qxviyak-shard-00-01.9aimv86.mongodb.net:27017,ac-qxviyak-shard-00-02.9aimv86.mongodb.net:27017/?ssl=true&replicaSet=atlas-buj9px-shard-0&authSource=admin&appName=Cluster0")
+mongoose.connect(process.env.MONGO_URL)
 .then(() => console.log("DB connected"))
 .catch(err => console.log("DB connection error:", err));
 
@@ -139,6 +139,8 @@ app.delete("/delete-post/:id", authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).send(err.message); }
 });
 
-app.listen(5000, "0.0.0.0", () => {
-    console.log("Server started on port 5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
 });
