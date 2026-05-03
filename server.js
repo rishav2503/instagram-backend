@@ -207,8 +207,14 @@ app.delete("/delete-post/:id", authMiddleware, async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).send("Post not found");
     if (post.userId.toString() !== req.user.userId) return res.status(403).send("Not allowed");
-    await Post.findByIdAndDelete(req.params.id);
-    res.send("Post deleted successfully 🗑️");
+    const postId = req.params.id;
+
+await Post.findByIdAndDelete(postId);
+
+// 🔥 SEND REAL-TIME EVENT
+io.emit("delete_post", postId);
+
+res.send("Post deleted successfully 🗑️");
   } catch (err) { res.status(500).send(err.message); }
 });
 
