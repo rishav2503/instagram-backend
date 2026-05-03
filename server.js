@@ -116,7 +116,6 @@ app.post("/comment", authMiddleware, async (req, res) => {
     post.comments.push({
       userId: req.user.userId,
       text,
-      name: user.name
     });
 
     await post.save();
@@ -182,7 +181,7 @@ app.put("/like", authMiddleware, async (req, res) => {
 
 app.get("/posts", async (req, res) => {
   try {
-    const posts = await Post.find().populate("userId", "name email").sort({ createdAt: -1 });
+    const posts = await Post.find().populate("userId", "name email").populate("comments.userId", "name").sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) { res.status(500).send(err.message); }
 });
