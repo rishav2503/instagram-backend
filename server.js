@@ -47,6 +47,13 @@ const PostSchema = new mongoose.Schema({
   image: String,
 
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  comments: [
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    text: String,
+    createdAt: { type: Date, default: Date.now }
+  }
+],
 }, { timestamps: true });
 const Post = mongoose.model("Post", PostSchema);
 
@@ -97,6 +104,26 @@ app.post("/login", async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: "1d" });
     res.send({ token });
   } catch (err) { res.status(500).send(err.message); }
+});
+
+app.post("/comment", authMiddleware, async (req, res) => {
+  try {
+    const { postId, text } = req.body;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).send("Post not found");
+
+    post.comments.push({
+      userId: req.user.userId,
+      text
+    });
+
+    await post.save();
+
+    res.send(post);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 });
 
 app.get("/profile", authMiddleware, async (req, res) => {
