@@ -115,7 +115,8 @@ app.post("/comment", authMiddleware, async (req, res) => {
 
     post.comments.push({
       userId: req.user.userId,
-      text
+      text,
+      name: user.name
     });
 
     await post.save();
