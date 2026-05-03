@@ -149,6 +149,7 @@ app.put("/update-profile", authMiddleware, async (req, res) => {
     ).select("-password");
 
     res.json(updatedUser);
+    io.emit("profile_updated", updatedUser);
   } catch (err) {
     res.status(500).send(err.message);
   }
