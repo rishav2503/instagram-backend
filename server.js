@@ -137,6 +137,23 @@ app.get("/profile", authMiddleware, async (req, res) => {
   res.send(user);
 });
 
+// ✅ UPDATE PROFILE
+app.put("/update-profile", authMiddleware, async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name },
+      { new: true }
+    ).select("-password");
+
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 // FIXED: Variable naming conflicts and user ID reference
 app.post("/create-post", authMiddleware, upload.single("image"), async (req, res) => {
   try {
