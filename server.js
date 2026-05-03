@@ -120,7 +120,11 @@ app.post("/comment", authMiddleware, async (req, res) => {
 
     await post.save();
 
-    res.send(post);
+const updatedPost = await Post.findById(postId)
+  .populate("userId", "name")
+  .populate("comments.userId", "name");
+
+res.json(updatedPost);
   } catch (err) {
     res.status(500).send(err.message);
   }
