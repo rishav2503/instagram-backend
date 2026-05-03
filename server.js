@@ -14,9 +14,8 @@ const app = express();
 
 // 1. FIXED CORS: Added 'ngrok-skip-browser-warning' to allowed headers
 app.use(cors({
-  origin: "*",
-  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
-  methods: ["GET", "POST", "PUT", "DELETE"]
+  origin: true,
+  credentials: true
 }));
 
 app.use((req, res, next) => {
