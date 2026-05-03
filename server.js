@@ -205,9 +205,9 @@ app.delete("/delete-post/:id", authMiddleware, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).send("Post not found");
-    console.log("POST USER:", post.userId.toString());
-console.log("LOGGED USER:", req.user.userId);
-    if (post.userId.toString() !== req.user.userId) return res.status(403).send("Not allowed");
+    console.log("Post user:", post.userId.toString());
+    console.log("Request user:", req.user.userId);
+    if (post.userId.toString() !== req.user.userId.toString()) return res.status(403).send("Not allowed");
     const postId = req.params.id;
 
 await Post.findByIdAndDelete(postId);
