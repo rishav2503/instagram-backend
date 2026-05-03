@@ -178,7 +178,7 @@ app.put("/like", authMiddleware, async (req, res) => {
 
     const updatedPost = await Post.findById(postId).populate("userId", "name");
 
-    io.emit("new-comment", updatedPost);
+    io.emit("update-like", updatedPost);
     res.json(updatedPost);
 
   } catch (err) {
