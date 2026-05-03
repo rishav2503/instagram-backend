@@ -151,7 +151,15 @@ app.post("/create-post", authMiddleware, upload.single("image"), async (req, res
     });
 
     await newPost.save();
-    res.send("Post created");
+
+// 🔥 IMPORTANT FIX (ADD THIS)
+const populatedPost = await Post.findById(newPost._id)
+  .populate("userId", "name");
+
+// 🔥 EMIT EVENT
+io.emit("new_post", populatedPost);
+
+res.json(populatedPost);
   } catch (err) {
     console.error(err);
     res.status(500).send(err.message);
