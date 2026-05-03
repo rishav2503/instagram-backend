@@ -7,6 +7,8 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const dns = require('dns');
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
 
@@ -124,6 +126,7 @@ const updatedPost = await Post.findById(postId)
   .populate("userId", "name")
   .populate("comments.userId", "name");
 
+io.emit("new-comment", updatedPost);
 res.json(updatedPost);
   } catch (err) {
     res.status(500).send(err.message);
@@ -175,6 +178,7 @@ app.put("/like", authMiddleware, async (req, res) => {
 
     const updatedPost = await Post.findById(postId).populate("userId", "name");
 
+    io.emit("new-comment", updatedPost);
     res.json(updatedPost);
 
   } catch (err) {
@@ -202,6 +206,22 @@ app.delete("/delete-post/:id", authMiddleware, async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
