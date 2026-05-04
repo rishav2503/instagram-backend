@@ -267,11 +267,28 @@ app.put("/follow/:id", authMiddleware, async (req, res) => {
     await currentUser.save();
     await targetUser.save();
 
-    res.json({
-      following: currentUser.following,
-      followers: targetUser.followers,
-      isFollowing: !isFollowing
-    });
+    // 🔥 populate both users
+const updatedCurrentUser = await User.findById(currentUserId)
+  .select("-password")
+  .populate("followers", "name")
+  .populate("following", "name");
+
+const updatedTargetUser = await User.findById(targetUserId)
+  .select("-password")
+  .populate("followers", "name")
+  .populate("following", "name");
+
+// 🔥 send realtime update
+io.emit("follow_updated", {
+  currentUser: updatedCurrentUser,
+  targetUser: updatedTargetUser
+});
+
+res.json({
+  currentUser: updatedCurrentUser,
+  targetUser: updatedTargetUser,
+  isFollowing: !isFollowing
+});
 
   } catch (err) {
     res.status(500).send(err.message);
