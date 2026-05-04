@@ -25,7 +25,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // DB connect
@@ -245,7 +246,14 @@ app.post("/gemini", async (req, res) => {
       }
     );
 
-    const data = await response.json();
+    let data;
+try {
+  data = await response.json();
+} catch (err) {
+  const text = await response.text();
+  console.log("Non JSON response:", text);
+  return res.status(500).json({ error: "Invalid Gemini response" });
+}
 
     if (!response.ok) {
       console.log("Gemini error:", data);
