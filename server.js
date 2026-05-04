@@ -211,7 +211,55 @@ app.put("/like", authMiddleware, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+// ================= GEMINI ROUTE =================
+const fetch = require("node-fetch");
 
+app.post("/gemini", async (req, res) => {
+  try {
+    const { prompt, image } = req.body;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                ...(image
+                  ? [{
+                      inlineData: {
+                        mimeType: "image/png",
+                        data: image
+                      }
+                    }]
+                  : [])
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.log("Gemini error:", data);
+      return res.status(500).json(data);
+    }
+
+    res.json(data);
+
+  } catch (err) {
+    console.log("Gemini server error:", err);
+    res.status(500).json({ error: "Gemini failed" });
+  }
+});
+// =================================================
 app.get("/posts", async (req, res) => {
   try {
     const posts = await Post.find().populate("userId", "name email").populate("comments.userId", "name").sort({ createdAt: -1 });
