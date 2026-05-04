@@ -1,5 +1,5 @@
 require('dotenv').config();
-import rateLimit from "express-rate-limit";
+const rateLimit = require("express-rate-limit");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
