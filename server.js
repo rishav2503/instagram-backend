@@ -354,11 +354,28 @@ try {
   }
 });
 // =================================================
-app.get("/posts", async (req, res) => {
+app.get("/posts", authMiddleware, async (req, res) => {
   try {
-    const posts = await Post.find().populate("userId", "name email").populate("comments.userId", "name").sort({ createdAt: -1 });
+    const currentUser = await User.findById(req.user.userId);
+
+    // include own posts + following users
+    const allowedUsers = [
+      ...currentUser.following,
+      req.user.userId
+    ];
+
+    const posts = await Post.find({
+      userId: { $in: allowedUsers }
+    })
+      .populate("userId", "name email")
+      .populate("comments.userId", "name")
+      .sort({ createdAt: -1 });
+
     res.json(posts);
-  } catch (err) { res.status(500).send(err.message); }
+
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
 });
 
 app.delete("/delete-post/:id", authMiddleware, async (req, res) => {
