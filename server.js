@@ -1,4 +1,5 @@
 require('dotenv').config();
+import rateLimit from "express-rate-limit";
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -28,6 +29,12 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+const geminiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5,              // max 5 requests per minute
+  message: "Too many requests, please try again later."
+});
 
 // DB connect
 dns.setDefaultResultOrder('ipv4first');
@@ -215,9 +222,13 @@ app.put("/like", authMiddleware, async (req, res) => {
 // ================= GEMINI ROUTE =================
 const fetch = require("node-fetch");
 
-app.post("/gemini", async (req, res) => {
+app.post("/gemini", geminiLimiter, authMiddleware, async (req, res) => {
   try {
     const { prompt, image } = req.body;
+    console.log("PROMPT:", prompt);
+console.log("IMAGE EXISTS:", !!image);
+console.log("API KEY:", process.env.GEMINI_KEY ? "YES" : "NO");
+    
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_KEY}`,
