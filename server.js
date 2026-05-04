@@ -378,6 +378,21 @@ app.get("/posts", authMiddleware, async (req, res) => {
   }
 });
 
+app.get("/users", authMiddleware, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user.userId);
+
+    const users = await User.find({
+      _id: { $nin: [...currentUser.following, req.user.userId] }
+    }).select("name");
+
+    res.json(users);
+
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 app.delete("/delete-post/:id", authMiddleware, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
