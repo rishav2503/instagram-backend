@@ -12,6 +12,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
+const fetch = require("node-fetch");
+app.set("trust proxy", 1);
+
 
 // 1. FIXED CORS: Added 'ngrok-skip-browser-warning' to allowed headers
 app.use(cors({
@@ -46,7 +49,10 @@ mongoose.connect(process.env.MONGO_URL)
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 });
 const User = mongoose.model("User", UserSchema);
 
@@ -141,7 +147,11 @@ res.json(updatedPost);
 });
 
 app.get("/profile", authMiddleware, async (req, res) => {
-  const user = await User.findById(req.user.userId).select("-password");
+  const user = await User.findById(req.user.userId)
+    .select("-password")
+    .populate("followers", "name")
+    .populate("following", "name");
+
   res.send(user);
 });
 
@@ -219,8 +229,56 @@ app.put("/like", authMiddleware, async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
+// ================= FOLLOW / UNFOLLOW =================
+
+app.put("/follow/:id", authMiddleware, async (req, res) => {
+  try {
+    const currentUserId = req.user.userId;
+    const targetUserId = req.params.id;
+
+    if (currentUserId === targetUserId) {
+      return res.status(400).send("You cannot follow yourself");
+    }
+
+    const currentUser = await User.findById(currentUserId);
+    const targetUser = await User.findById(targetUserId);
+
+    if (!targetUser) return res.status(404).send("User not found");
+
+    const isFollowing = currentUser.following.includes(targetUserId);
+
+    if (isFollowing) {
+      // UNFOLLOW
+      currentUser.following = currentUser.following.filter(
+        id => id.toString() !== targetUserId
+      );
+
+      targetUser.followers = targetUser.followers.filter(
+        id => id.toString() !== currentUserId
+      );
+
+    } else {
+      // FOLLOW
+      currentUser.following.push(targetUserId);
+      targetUser.followers.push(currentUserId);
+    }
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.json({
+      following: currentUser.following,
+      followers: targetUser.followers,
+      isFollowing: !isFollowing
+    });
+
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 // ================= GEMINI ROUTE =================
-const fetch = require("node-fetch");
 
 app.post("/gemini", geminiLimiter, authMiddleware, async (req, res) => {
   try {
@@ -229,7 +287,7 @@ app.post("/gemini", geminiLimiter, authMiddleware, async (req, res) => {
 console.log("IMAGE EXISTS:", !!image);
 console.log("API KEY:", process.env.GEMINI_KEY ? "YES" : "NO");
     
-
+console.log("Using API KEY:", process.env.GEMINI_KEY?.slice(0, 10));
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_KEY}`,
       {
