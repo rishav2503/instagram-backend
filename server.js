@@ -281,11 +281,6 @@ const updatedTargetUser = await User.findById(targetUserId)
   .populate("followers", "name")
   .populate("following", "name");
 
-// 🔥 send realtime update
-io.emit("follow_updated", {
-  currentUser: updatedCurrentUser,
-  targetUser: updatedTargetUser
-});
 
 res.json({
   currentUser: updatedCurrentUser,
