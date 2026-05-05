@@ -13,7 +13,9 @@ const { Server } = require("socket.io");
 
 const app = express();
 const fetch = require("node-fetch");
-const BASE_URL = process.env.BASE_URL || "https://instagram-backend-hswx.onrender.com";
+const getBaseUrl = (req) => {
+  return `${req.protocol}://${req.get("host")}`;
+};
 app.set("trust proxy", 1);
 
 
@@ -178,26 +180,24 @@ app.put("/update-profile", authMiddleware, async (req, res) => {
 app.post("/create-post", authMiddleware, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).send("Image is required");
-     const BASE_URL = process.env.BASE_URL || "https://instagram-backend-hswx.onrender.com";
+
+    const BASE_URL = getBaseUrl(req);  // ✅ dynamic
+
     const newPost = new Post({
       caption: req.body.caption,
-      // Constructs the image URL based on the current host (ngrok or localhost)
-     
-
-image: `${BASE_URL}/uploads/${req.file.filename}`,
+      image: `${BASE_URL}/uploads/${req.file.filename}`,
       userId: req.user.userId
     });
 
     await newPost.save();
 
-// 🔥 IMPORTANT FIX (ADD THIS)
-const populatedPost = await Post.findById(newPost._id)
-  .populate("userId", "name");
+    const populatedPost = await Post.findById(newPost._id)
+      .populate("userId", "name");
 
-// 🔥 EMIT EVENT
-io.emit("new_post", populatedPost);
+    io.emit("new_post", populatedPost);
 
-res.json(populatedPost);
+    res.json(populatedPost);
+
   } catch (err) {
     console.error(err);
     res.status(500).send(err.message);
