@@ -13,6 +13,7 @@ const { Server } = require("socket.io");
 
 const app = express();
 const fetch = require("node-fetch");
+const BASE_URL = process.env.BASE_URL || "https://instagram-backend-hswx.onrender.com";
 app.set("trust proxy", 1);
 
 
@@ -177,11 +178,13 @@ app.put("/update-profile", authMiddleware, async (req, res) => {
 app.post("/create-post", authMiddleware, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).send("Image is required");
-
+     const BASE_URL = process.env.BASE_URL || "https://instagram-backend-hswx.onrender.com";
     const newPost = new Post({
       caption: req.body.caption,
       // Constructs the image URL based on the current host (ngrok or localhost)
-      image: `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`,
+     
+
+image: `${BASE_URL}/uploads/${req.file.filename}`,
       userId: req.user.userId
     });
 
