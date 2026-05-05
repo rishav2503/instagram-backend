@@ -249,7 +249,9 @@ app.put("/follow/:id", authMiddleware, async (req, res) => {
 
     if (!targetUser) return res.status(404).send("User not found");
 
-    const isFollowing = currentUser.following.includes(targetUserId);
+    const isFollowing = currentUser.following.some(
+  id => id.toString() === targetUserId
+);
 
     if (isFollowing) {
       // UNFOLLOW
