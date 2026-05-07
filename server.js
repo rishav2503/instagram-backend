@@ -401,7 +401,7 @@ app.get("/users", authMiddleware, async (req, res) => {
 
     const users = await User.find({
       _id: { $nin: [...currentUser.following, req.user.userId] }
-    }).select("name");
+    }).select("name followers following");
 
     res.json(users);
 
@@ -478,6 +478,7 @@ app.get("/messages/:userId", authMiddleware, async (req, res) => {
     res.status(500).send(err.message);
   }
 });
+
 
 app.delete("/delete-post/:id", authMiddleware, async (req, res) => {
   try {
