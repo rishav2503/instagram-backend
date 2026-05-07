@@ -75,6 +75,23 @@ const PostSchema = new mongoose.Schema({
 }, { timestamps: true });
 const Post = mongoose.model("Post", PostSchema);
 
+const MessageSchema = new mongoose.Schema({
+  sender: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+
+  text: String
+
+}, { timestamps: true });
+
+const Message = mongoose.model("Message", MessageSchema);
+
 // Multer Setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
@@ -387,6 +404,75 @@ app.get("/users", authMiddleware, async (req, res) => {
     }).select("name");
 
     res.json(users);
+
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+app.post("/send-message", authMiddleware, async (req, res) => {
+  try {
+    const { receiverId, text } = req.body;
+
+    const senderId = req.user.userId;
+
+    const sender = await User.findById(senderId);
+    const receiver = await User.findById(receiverId);
+
+    if (!receiver) {
+      return res.status(404).send("User not found");
+    }
+
+    // ✅ BOTH MUST FOLLOW EACH OTHER
+    const senderFollows = sender.following.some(
+      id => id.toString() === receiverId
+    );
+
+    const receiverFollows = receiver.following.some(
+      id => id.toString() === senderId
+    );
+
+    if (!senderFollows || !receiverFollows) {
+      return res.status(403).send("Both users must follow each other");
+    }
+
+    const message = new Message({
+      sender: senderId,
+      receiver: receiverId,
+      text
+    });
+
+    await message.save();
+
+    const populatedMessage = await Message.findById(message._id)
+      .populate("sender", "name")
+      .populate("receiver", "name");
+
+    io.emit("new_message", populatedMessage);
+
+    res.json(populatedMessage);
+
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+app.get("/messages/:userId", authMiddleware, async (req, res) => {
+  try {
+    const currentUser = req.user.userId;
+    const otherUser = req.params.userId;
+
+    const messages = await Message.find({
+      $or: [
+        { sender: currentUser, receiver: otherUser },
+        { sender: otherUser, receiver: currentUser }
+      ]
+    })
+      .populate("sender", "name")
+      .populate("receiver", "name")
+      .sort({ createdAt: 1 });
+
+    res.json(messages);
 
   } catch (err) {
     res.status(500).send(err.message);
